@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0F6B51">
+  <title>Geo Attendance</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ============ Sign in ============ -->
+  <main id="login" class="login" hidden>
+    <form class="login-card" id="login-form" autocomplete="on">
+      <div class="brand brand-lg">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+        </span>
+        <span>Geo Attendance</span>
+      </div>
+      <p class="login-lede">Location- and photo-verified attendance.</p>
+      <div id="login-google"></div>
+      <p class="form-error" id="login-error" role="alert"></p>
+      <p class="hint">Use your @dlsl.edu.ph Google account.</p>
+    </form>
+  </main>
+
+  <!-- ============ App shell ============ -->
+  <div id="app" class="shell" hidden>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+        </span>
+        <span>Geo Attendance</span>
+      </div>
+      <div class="account">
+        <button class="account-btn" id="btn-account" aria-haspopup="menu" aria-expanded="false" aria-controls="account-menu">
+          <span class="account-name" id="user-name"></span>
+          <span class="role-tag" id="user-role"></span>
+          <span class="avatar avatar-sm" id="user-initials" aria-hidden="true"></span>
+        </button>
+        <div class="account-menu" id="account-menu" role="menu" hidden>
+          <div class="account-head">
+            <div class="cell-main" id="menu-name"></div>
+            <div class="cell-sub" id="menu-email"></div>
+          </div>
+          <button role="menuitem" id="btn-password" hidden>Change password</button>
+          <button role="menuitem" id="btn-logout">Sign out</button>
+        </div>
+      </div>
+      <button class="hamburger" id="btn-menu" aria-label="Open menu" aria-expanded="false" aria-controls="drawer">
+        <span></span><span></span><span></span>
+      </button>
+    </header>
+
+    <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+
+    <main class="content">
+
+      <!-- Clock in / out -->
+      <section class="view" data-view="clock">
+        <div class="clock-layout">
+          <div class="clock-main">
+            <div class="clock-hero">
+              <div class="clock-time" id="clock-time">--:--</div>
+              <div class="clock-date" id="clock-date"></div>
+              <div class="clock-shift" id="clock-shift"></div>
+              <span class="status-pill" id="clock-status">Loading…</span>
+            </div>
+
+            <div class="qr-step" id="qr-step" hidden>
+              <span class="dot" id="qr-dot"></span>
+              <div class="qr-step-text">
+                <div class="loc-primary" id="qr-primary">Scan the class QR</div>
+                <div class="loc-secondary" id="qr-secondary"></div>
+              </div>
+              <button class="btn btn-ghost btn-sm" id="btn-scan">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3h7v7H3V3Zm2 2v3h3V5H5Zm9-2h7v7h-7V3Zm2 2v3h3V5h-3ZM3 14h7v7H3v-7Zm2 2v3h3v-3H5Zm9-2h3v3h-3v-3Zm4 0h3v3h-3v-3Zm-4 4h3v3h-3v-3Zm4 0h3v3h-3v-3Z"/></svg>
+                <span>Scan</span>
+              </button>
+            </div>
+
+            <div class="camera" id="camera">
+              <video id="cam-video" playsinline muted autoplay></video>
+              <img id="cam-still" alt="Your captured photo" hidden>
+              <canvas id="cam-canvas" hidden></canvas>
+              <div class="camera-guide" id="cam-guide" aria-hidden="true"></div>
+              <div class="camera-msg" id="cam-msg">Starting camera…</div>
+              <div class="camera-retry" id="cam-fallback" hidden>
+                <button class="btn btn-ghost btn-sm" id="cam-retry">Try again</button>
+                <button class="btn btn-primary btn-sm" id="cam-native">Use phone camera</button>
+              </div>
+              <input type="file" id="cam-file" accept="image/*" capture="user" hidden>
+            </div>
+
+            <div class="cam-actions" id="cam-actions">
+              <button class="btn btn-ghost" id="btn-snap" disabled>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3 7.2 5H4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-3.2L15 3H9Zm3 5a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Zm0 2a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5Z"/></svg>
+                <span>Take photo</span>
+              </button>
+            </div>
+
+            <button class="btn btn-primary btn-xl" id="btn-punch" disabled>Check in</button>
+            <p class="punch-help" id="punch-help"></p>
+          </div>
+
+          <aside class="clock-side">
+            <div class="card">
+              <h3 class="card-title">Location</h3>
+              <div class="loc-row">
+                <span class="dot" id="loc-dot"></span>
+                <div>
+                  <div class="loc-primary" id="loc-primary">Getting your location…</div>
+                  <div class="loc-secondary" id="loc-secondary"></div>
+                </div>
+              </div>
+              <div class="map map-sm" id="clock-map"></div>
+            </div>
+
+            <div class="card">
+              <h3 class="card-title">Today's shifts</h3>
+              <ul class="today-list" id="today-list"></ul>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- My history -->
+      <section class="view" data-view="history">
+        <div class="view-head">
+          <h2>My attendance</h2>
+          <div class="filters">
+            <input type="date" id="hist-from" aria-label="From">
+            <input type="date" id="hist-to" aria-label="To">
+          </div>
+        </div>
+        <div class="card card-flush"><div class="table-wrap"><table class="table" id="hist-table"></table></div></div>
+      </section>
+
+      <!-- Dashboard -->
+      <section class="view" data-view="dashboard">
+        <div class="view-head">
+          <h2>Today <span class="muted" id="dash-date"></span></h2>
+          <button class="btn btn-ghost btn-sm" id="dash-refresh">Refresh</button>
+        </div>
+        <div class="stats" id="dash-stats"></div>
+        <div class="dash-grid">
+          <div class="card card-flush">
+            <div class="card-head"><h3 class="card-title">Live map</h3><span class="muted small">Auto-refreshes every minute</span></div>
+            <div class="map map-lg" id="dash-map"></div>
+          </div>
+          <div class="card card-flush">
+            <div class="card-head">
+              <h3 class="card-title">Workforce</h3>
+              <div class="seg" id="dash-seg">
+                <button data-f="all" class="on">All</button>
+                <button data-f="in">On duty</button>
+                <button data-f="absent">Absent</button>
+                <button data-f="out">Done</button>
+              </div>
+            </div>
+            <ul class="people" id="dash-people"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Records & review -->
+      <section class="view" data-view="records">
+        <div class="view-head">
+          <h2>Attendance records</h2>
+          <div class="filters">
+            <input type="date" id="rec-from" aria-label="From">
+            <input type="date" id="rec-to" aria-label="To">
+            <select id="rec-status" aria-label="Status">
+              <option value="">All statuses</option>
+              <option value="flagged">Needs review</option>
+              <option value="ok">Verified</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <select id="rec-site" aria-label="Site"></select>
+            <button class="btn btn-ghost btn-sm" id="rec-export">Export CSV</button>
+          </div>
+        </div>
+        <div class="card card-flush"><div class="table-wrap"><table class="table clickable" id="rec-table"></table></div></div>
+
+        <div class="view-head sub">
+          <h3>Refused attempts</h3>
+          <span class="muted small">Check-ins blocked for being outside a geofence or missing a photo</span>
+        </div>
+        <div class="card card-flush"><div class="table-wrap"><table class="table" id="att-table"></table></div></div>
+      </section>
+
+      <!-- Payroll -->
+      <section class="view" data-view="payroll">
+        <div class="view-head">
+          <h2>Payroll hours</h2>
+          <div class="filters">
+            <input type="date" id="pay-from" aria-label="From">
+            <input type="date" id="pay-to" aria-label="To">
+            <select id="pay-site" aria-label="Site"></select>
+            <button class="btn btn-ghost btn-sm" id="pay-export">Export CSV</button>
+          </div>
+        </div>
+        <div class="stats" id="pay-stats"></div>
+        <div class="card card-flush"><div class="table-wrap"><table class="table" id="pay-table"></table></div></div>
+        <p class="muted small note" id="pay-note"></p>
+      </section>
+
+      <!-- Employees -->
+      <section class="view" data-view="employees">
+        <div class="view-head">
+          <h2>Employees</h2>
+          <div class="filters">
+            <input type="search" id="emp-search" placeholder="Search name, ID, position" aria-label="Search">
+            <button class="btn btn-primary btn-sm admin-only" id="emp-add">Add employee</button>
+          </div>
+        </div>
+        <div class="card card-flush"><div class="table-wrap"><table class="table" id="emp-table"></table></div></div>
+      </section>
+
+      <!-- Sites -->
+      <section class="view" data-view="sites">
+        <div class="view-head">
+          <h2>Sites &amp; geofences</h2>
+          <button class="btn btn-primary btn-sm admin-only" id="site-add">Add site</button>
+        </div>
+        <div class="dash-grid">
+          <div class="card card-flush"><div class="map map-lg" id="sites-map"></div></div>
+          <div class="card card-flush"><ul class="site-list" id="site-list"></ul></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ============ Mobile drawer ============ -->
+  <div class="drawer-backdrop" id="drawer-backdrop" hidden></div>
+  <aside class="drawer" id="drawer" aria-label="Menu" aria-hidden="true" inert>
+    <div class="drawer-head">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7Zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5Z"/></svg>
+        </span>
+        <span>Geo Attendance</span>
+      </div>
+      <button class="icon-btn" id="drawer-close" aria-label="Close menu">×</button>
+    </div>
+    <div class="drawer-user">
+      <span class="avatar" id="drawer-initials" aria-hidden="true"></span>
+      <div>
+        <div class="cell-main" id="drawer-name"></div>
+        <div class="cell-sub" id="drawer-email"></div>
+      </div>
+      <span class="role-tag" id="drawer-role"></span>
+    </div>
+    <nav class="drawer-nav" id="drawer-nav" aria-label="Sections"></nav>
+    <div class="drawer-foot">
+      <button class="drawer-item" id="drawer-password" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a5 5 0 0 0-5 5v3H5v12h14V10h-2V7a5 5 0 0 0-5-5Zm-3 5a3 3 0 1 1 6 0v3H9V7Zm3 7a2 2 0 0 1 1 3.7V20h-2v-2.3A2 2 0 0 1 12 14Z"/></svg><span>Change password</span></button>
+      <button class="drawer-item danger" id="drawer-logout"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 3h10v2H6v14h8v2H4V3Zm12.6 4.4L21.2 12l-4.6 4.6-1.4-1.4 2.2-2.2H9v-2h8.4l-2.2-2.2 1.4-1.4Z"/></svg><span>Sign out</span></button>
+    </div>
+  </aside>
+
+  <!-- ============ Modal ============ -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <header class="modal-head">
+        <h3 id="modal-title"></h3>
+        <button class="icon-btn" data-close aria-label="Close">×</button>
+      </header>
+      <div class="modal-body" id="modal-body"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async></script>
+  <script src="js/config.js"></script>
+  <script src="js/bridge.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
